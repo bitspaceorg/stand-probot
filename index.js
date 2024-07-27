@@ -3,12 +3,12 @@
  * @param {import('probot').Probot} app
  */
 import axios from "axios";
-const dotenv = require("dotenv");
+import dotenv from "dotenv";
 dotenv.config();
 
 export default (app) => {
   app.on("pull_request.opened", async (context) => {
-    axios.get(process.env.URL + "/build").then((res) => {
+    axios.post(process.env.URL + "/build").then((res) => {
       if (res.data.status === "ok") {
         return context.octokit.pulls.createReview({
           owner: context.payload.repository.owner.login,
@@ -30,7 +30,7 @@ export default (app) => {
   });
 
   app.on("push", async (context) => {
-    axios.get(process.env.URL + "/build").then((res) => {
+    axios.post(process.env.URL + "/build").then((res) => {
       if (res.data.status === "ok") {
         return context.octokit.checks.create({
           owner: context.payload.repository.owner.login,
@@ -53,20 +53,11 @@ export default (app) => {
     });
 
     app.on(
-      [
-        "installation.created",
-        "installation_repositories.added",
-        "installation_repositories.removed",
-      ],
+      ["installation.created", "installation_repositories.added"],
       async (context) => {
-        console.log(
-          context.payload.repositories_added,
-          context.payload.repositories_removed,
-          context.payload.repositories,
-        );
         axios.post(process.env.URL + "/repos", {
-          owner: context.payload.repository.owner.login,
-          repo: context.payload.repository.name,
+          repo:
+            context.payload.repositories + context.payload.repositories_added,
         });
       },
     );
